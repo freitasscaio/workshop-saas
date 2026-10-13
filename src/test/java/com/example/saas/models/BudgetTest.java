@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+import com.example.saas.exceptions.BusinessRuleException;
+
 public class BudgetTest {
 
     @Test
@@ -24,9 +26,9 @@ public class BudgetTest {
 
         Budget budget = new Budget();
 
-        IllegalStateException exception =
+        BusinessRuleException exception =
                 assertThrows(
-                        IllegalStateException.class,
+                        BusinessRuleException.class,
                         budget::approve
                 );
 
@@ -63,9 +65,9 @@ public class BudgetTest {
 
         assertEquals(BudgetStatus.APPROVED, budget.getStatus());
 
-        IllegalStateException exception =
+        BusinessRuleException exception =
                 assertThrows(
-                        IllegalStateException.class,
+                        BusinessRuleException.class,
                         budget::reject
                 );
 
