@@ -1,0 +1,11 @@
+services:
+  saas-api:
+    image: saas-api:local
+    container_name: saas-api
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://host.docker.internal:5432/workshop_saas
+      DB_USERNAME: ${DB_USERNAME:?A variável DB_USERNAME não está definida}
+      DB_PASSWORD: ${DB_PASSWORD:?A variável DB_PASSWORD não está definida}
+    restart: unless-stopped
