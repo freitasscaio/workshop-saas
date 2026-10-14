@@ -8,4 +8,5 @@ services:
       DB_URL: jdbc:postgresql://host.docker.internal:5432/workshop_saas
       DB_USERNAME: ${DB_USERNAME:?A variável DB_USERNAME não está definida}
       DB_PASSWORD: ${DB_PASSWORD:?A variável DB_PASSWORD não está definida}
+      JWT_SECRET: ${JWT_SECRET:?A variável JWT_SECRET não está definida}
     restart: unless-stopped

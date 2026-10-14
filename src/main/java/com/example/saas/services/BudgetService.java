@@ -1,3 +1,4 @@
+
 package com.example.saas.services;
 
 import java.math.BigDecimal;
@@ -26,111 +27,114 @@ public class BudgetService {
     private final VehicleService vehicleService;
     private final WorkshopService workshopService;
 
-    public BudgetService(BudgetRepository budgetRepository, CustomerService customerService, VehicleService vehicleService, WorkshopService workshopService) {
+    public BudgetService(
+            BudgetRepository budgetRepository,
+            CustomerService customerService,
+            VehicleService vehicleService,
+            WorkshopService workshopService) {
+
         this.budgetRepository = budgetRepository;
-		this.customerService = customerService;
-		this.vehicleService = vehicleService;
-		this.workshopService = workshopService;
+        this.customerService = customerService;
+        this.vehicleService = vehicleService;
+        this.workshopService = workshopService;
     }
-    
-    public Budget save(BudgetRequestDTO dto) {
-        Customer customer = customerService.findById(dto.getCustomerId());
-        
-        Vehicle vehicle = vehicleService.findById(dto.getVehicleId());
-        
-        if(!vehicle.getCustomer().getId().equals(customer.getId())) {
-        	throw new BusinessRuleException(
-        			"O veículo não pertence ao cliente informado.");
+
+    public Budget save(BudgetRequestDTO dto, Long workshopId) {
+
+        Customer customer = customerService.findById(
+                dto.getCustomerId(), workshopId);
+
+        Vehicle vehicle = vehicleService.findById(
+                dto.getVehicleId(), workshopId);
+
+        if (!vehicle.getCustomer().getId().equals(customer.getId())) {
+            throw new BusinessRuleException(
+                    "O veículo não pertence ao cliente informado.");
         }
-        
-        Workshop workshop = workshopService.findById(1L);
-        
+
+        Workshop workshop = workshopService.findById(workshopId);
+
         Budget budget = new Budget();
-        
+
         budget.setWorkshop(workshop);
         budget.setCustomer(customer);
         budget.setVehicle(vehicle);
-        
+
         BigDecimal total = BigDecimal.ZERO;
-        
-        for(BudgetItemRequestDTO itemDTO : dto.getItems()) {
-        	BigDecimal subtotal = itemDTO.getQuantity().multiply(itemDTO.getUnitPrice());
-        	
-        	BudgetItem item = new BudgetItem();
-        	
-        	item.setBudget(budget);
+
+        for (BudgetItemRequestDTO itemDTO : dto.getItems()) {
+            BigDecimal subtotal = itemDTO.getQuantity()
+                    .multiply(itemDTO.getUnitPrice());
+
+            BudgetItem item = new BudgetItem();
+
+            item.setBudget(budget);
             item.setDescription(itemDTO.getDescription());
             item.setType(itemDTO.getType());
             item.setQuantity(itemDTO.getQuantity());
             item.setUnitPrice(itemDTO.getUnitPrice());
             item.setSubTotal(subtotal);
-            
+
             budget.getItems().add(item);
-            
+
             total = total.add(subtotal);
-        	
         }
-        
+
         budget.setTotalAmount(total);
         budget.setNotes(dto.getNotes());
-        
+
         return budgetRepository.save(budget);
-        
-    }
-    
-    public Budget findById(Long id) {
-        return budgetRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento com ID " + id + " não encontrado."));
     }
 
-    public List<Budget> findAll(){
-    	return budgetRepository.findAll();
+    public Budget findById(Long id, Long workshopId) {
+        return budgetRepository.findByIdAndWorkshop_Id(id, workshopId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Orçamento com ID " + id + " não encontrado."));
     }
-    
-    public Budget send(Long id) {
-    	Budget budget = findById(id);
-    	
-    	budget.send();
-    	
-    	return budgetRepository.save(budget);
+
+    public List<Budget> findAll(Long workshopId) {
+        return budgetRepository.findAllByWorkshop_Id(workshopId);
     }
-    
-    public Budget markAsViewed (Long id) {
-    	Budget budget = findById(id);
-    	
-    	budget.markAsViewed();
-    	
-    	return budgetRepository.save(budget);
+
+    public Budget send(Long id, Long workshopId) {
+        Budget budget = findById(id, workshopId);
+
+        budget.send();
+
+        return budgetRepository.save(budget);
     }
-    
-    public Budget approve(Long id) {
-    	
-    	Budget budget = findById(id);
-    	
-    	budget.approve();
-    	
-    	return budgetRepository.save(budget);
+
+    public Budget markAsViewed(Long id, Long workshopId) {
+        Budget budget = findById(id, workshopId);
+
+        budget.markAsViewed();
+
+        return budgetRepository.save(budget);
     }
-    
-    public Budget reject(Long id) {
-    	
-    	Budget budget = findById(id);
-    	
-    	budget.reject();
-    	
-    	return budgetRepository.save(budget);
+
+    public Budget approve(Long id, Long workshopId) {
+        Budget budget = findById(id, workshopId);
+
+        budget.approve();
+
+        return budgetRepository.save(budget);
     }
-    
-    
+
+    public Budget reject(Long id, Long workshopId) {
+        Budget budget = findById(id, workshopId);
+
+        budget.reject();
+
+        return budgetRepository.save(budget);
+    }
+
     public void expireExpiredBudgets() {
 
-        List<Budget> budgets = budgetRepository.findByExpirationDateBeforeAndStatusIn(
-                LocalDate.now(),
-                List.of(
-                        BudgetStatus.SENT,
-                        BudgetStatus.VIEWED
-                )
-        );
+        List<Budget> budgets =
+                budgetRepository.findByExpirationDateBeforeAndStatusIn(
+                        LocalDate.now(),
+                        List.of(BudgetStatus.SENT, BudgetStatus.VIEWED));
 
         for (Budget budget : budgets) {
             budget.expire();
@@ -138,5 +142,4 @@ public class BudgetService {
 
         budgetRepository.saveAll(budgets);
     }
-    
 }

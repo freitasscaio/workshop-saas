@@ -1,3 +1,4 @@
+
 package com.example.saas.services;
 
 import java.util.List;
@@ -24,9 +25,10 @@ public class VehicleService {
         this.customerService = customerService;
     }
 
-    public Vehicle save(VehicleRequestDTO dto) {
+    public Vehicle save(VehicleRequestDTO dto, Long workshopId) {
 
-        Customer customer = customerService.findById(dto.getCustomerId());
+        Customer customer = customerService.findById(
+                dto.getCustomerId(), workshopId);
 
         Vehicle vehicle = new Vehicle();
 
@@ -39,17 +41,21 @@ public class VehicleService {
         return vehicleRepository.save(vehicle);
     }
 
-    public Vehicle findById(Long id) {
-        return vehicleRepository.findById(id)
+    public Vehicle findById(Long id, Long workshopId) {
+        return vehicleRepository.findByIdAndCustomer_Workshop_Id(
+                        id, workshopId)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Vehicle com id " + id + " não encontrado."));
+                        new ResourceNotFoundException(
+                                "Veículo com id " + id + " não encontrado."));
     }
-    
-    public List<Vehicle> findByCustomerId(Long customerId) {
 
-        customerService.findById(customerId);
+    public List<Vehicle> findByCustomerId(
+            Long customerId, Long workshopId) {
 
-        return vehicleRepository.findByCustomerId(customerId);
+        customerService.findById(customerId, workshopId);
+
+        return vehicleRepository
+                .findByCustomer_IdAndCustomer_Workshop_Id(
+                        customerId, workshopId);
     }
-    
 }

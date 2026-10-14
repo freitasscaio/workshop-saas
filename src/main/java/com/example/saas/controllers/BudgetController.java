@@ -1,7 +1,10 @@
+
 package com.example.saas.controllers;
 
 import java.util.List;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,11 +34,97 @@ public class BudgetController {
     }
 
     @PostMapping
-    public BudgetResponseDTO create(@Valid @RequestBody BudgetRequestDTO dto) {
+    public BudgetResponseDTO create(
+            @Valid @RequestBody BudgetRequestDTO dto,
+            @AuthenticationPrincipal Jwt jwt) {
 
-        Budget budget = budgetService.save(dto);
+        Budget budget = budgetService.save(dto, getWorkshopId(jwt));
 
         return toResponseDTO(budget);
+    }
+
+    @GetMapping("/{id}")
+    public BudgetResponseDTO findById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        Budget budget = budgetService.findById(id, getWorkshopId(jwt));
+
+        return toResponseDTO(budget);
+    }
+
+    @GetMapping
+    public List<BudgetListResponseDTO> findAll(
+            @AuthenticationPrincipal Jwt jwt) {
+
+        List<Budget> budgets = budgetService.findAll(getWorkshopId(jwt));
+
+        return budgets.stream()
+                .map(budget -> new BudgetListResponseDTO(
+                        budget.getId(),
+                        budget.getCustomer().getName(),
+                        budget.getVehicle().getBrand() + " "
+                                + budget.getVehicle().getModel(),
+                        budget.getStatus(),
+                        budget.getIssueDate(),
+                        budget.getTotalAmount()))
+                .toList();
+    }
+
+    @PostMapping("/{id}/send")
+    public BudgetResponseDTO send(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        Budget budget = budgetService.send(id, getWorkshopId(jwt));
+
+        return toResponseDTO(budget);
+    }
+
+    @PostMapping("/{id}/view")
+    public BudgetResponseDTO markAsViewed(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        Budget budget = budgetService.markAsViewed(
+                id, getWorkshopId(jwt));
+
+        return toResponseDTO(budget);
+    }
+
+    @PostMapping("/{id}/approve")
+    public BudgetResponseDTO approve(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        Budget budget = budgetService.approve(id, getWorkshopId(jwt));
+
+        return toResponseDTO(budget);
+    }
+
+    @PostMapping("/{id}/reject")
+    public BudgetResponseDTO reject(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        Budget budget = budgetService.reject(id, getWorkshopId(jwt));
+
+        return toResponseDTO(budget);
+    }
+
+    private Long getWorkshopId(Jwt jwt) {
+        Object claim = jwt.getClaim("workshopId");
+
+        if (claim instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (claim instanceof String value) {
+            return Long.parseLong(value);
+        }
+
+        throw new IllegalStateException(
+                "O token não contém um workshopId válido.");
     }
 
     private BudgetResponseDTO toResponseDTO(Budget budget) {
@@ -46,8 +135,7 @@ public class BudgetController {
                         budget.getCustomer().getName(),
                         budget.getCustomer().getPhone(),
                         budget.getCustomer().getEmail(),
-                        budget.getCustomer().getCreatedAt()
-                );
+                        budget.getCustomer().getCreatedAt());
 
         VehicleResponseDTO vehicleDTO =
                 new VehicleResponseDTO(
@@ -55,8 +143,7 @@ public class BudgetController {
                         budget.getVehicle().getPlate(),
                         budget.getVehicle().getBrand(),
                         budget.getVehicle().getModel(),
-                        budget.getVehicle().getYear()
-                );
+                        budget.getVehicle().getYear());
 
         List<BudgetItemResponseDTO> items =
                 budget.getItems()
@@ -67,8 +154,7 @@ public class BudgetController {
                                 item.getType(),
                                 item.getQuantity(),
                                 item.getUnitPrice(),
-                                item.getSubTotal()
-                        ))
+                                item.getSubTotal()))
                         .toList();
 
         return new BudgetResponseDTO(
@@ -80,69 +166,6 @@ public class BudgetController {
                 budget.getExpirationDate(),
                 budget.getNotes(),
                 budget.getTotalAmount(),
-                items
-        );
+                items);
     }
-    
-    @GetMapping("/{id}")
-    public BudgetResponseDTO findById(@PathVariable Long id) {
-    	Budget budget = budgetService.findById(id);
-    	
-    	return toResponseDTO(budget);
-    }
-    
-    @GetMapping
-    public List<BudgetListResponseDTO> findAll(){
-    	
-    	List<Budget> budgets = budgetService.findAll();
-    	
-    	 return budgets.stream()
-    	            .map(budget -> new BudgetListResponseDTO(
-    	                    budget.getId(),
-    	                    budget.getCustomer().getName(),
-    	                    budget.getVehicle().getBrand() + " "
-    	                            + budget.getVehicle().getModel(),
-    	                    budget.getStatus(),
-    	                    budget.getIssueDate(),
-    	                    budget.getTotalAmount()
-    	            ))
-    	            .toList();
-    	
-    }
-    
-    @PostMapping("/{id}/send")
-    public BudgetResponseDTO send (@PathVariable Long id) {
-    	
-    	Budget budget = budgetService.send(id);
-    	
-    	return toResponseDTO(budget);
-    	
-    }
-    
-    @PostMapping("/{id}/view")
-    public BudgetResponseDTO markAsViewwd(@PathVariable Long id) {
-    	
-    	Budget budget = budgetService.markAsViewed(id);
-    	
-    	return toResponseDTO(budget);
-    	
-    }
-    
-    @PostMapping("/{id}/approve")
-    public BudgetResponseDTO approve (@PathVariable Long id) {
-    	
-    	Budget budget = budgetService.approve(id);
-    	
-    	return toResponseDTO(budget);
-    }
-    
-    @PostMapping("/{id}/reject")
-    public BudgetResponseDTO reject (@PathVariable Long id) {
-    	
-    	Budget budget = budgetService.reject(id);
-    	
-    	return toResponseDTO(budget);
-    	
-    }
-    
 }
