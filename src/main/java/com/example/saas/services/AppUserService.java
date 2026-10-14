@@ -6,6 +6,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.saas.dto.AppUserRequestDTO;
+import com.example.saas.dto.AppUserResponseDTO;
 import com.example.saas.dto.WorkshopRegistrationRequestDTO;
 import com.example.saas.dto.WorkshopRegistrationResponseDTO;
 import com.example.saas.exceptions.BusinessRuleException;
@@ -40,8 +42,7 @@ public class AppUserService {
 
         if (appUserRepository.findByEmail(ownerEmail).isPresent()) {
             throw new BusinessRuleException(
-                    "Já existe um usuário cadastrado com este e-mail."
-            );
+                    "Já existe um usuário cadastrado com este e-mail.");
         }
 
         Workshop workshop = new Workshop();
@@ -69,8 +70,42 @@ public class AppUserService {
                 savedOwner.getName(),
                 savedOwner.getEmail(),
                 savedOwner.getRole(),
-                savedOwner.getCreatedAt()
-        );
+                savedOwner.getCreatedAt());
+    }
+
+    @Transactional
+    public AppUserResponseDTO registerStaff(
+            AppUserRequestDTO dto,
+            Long workshopId) {
+
+        String email = dto.getEmail()
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        if (appUserRepository.findByEmail(email).isPresent()) {
+            throw new BusinessRuleException(
+                    "Já existe um usuário cadastrado com este e-mail.");
+        }
+
+        Workshop workshop = workshopService.findById(workshopId);
+
+        AppUser staff = new AppUser();
+
+        staff.setWorkshop(workshop);
+        staff.setName(dto.getName().trim());
+        staff.setEmail(email);
+        staff.setPassword(passwordEncoder.encode(dto.getPassword()));
+        staff.setRole("STAFF");
+
+        AppUser savedStaff = appUserRepository.save(staff);
+
+        return new AppUserResponseDTO(
+                savedStaff.getId(),
+                savedStaff.getWorkshop().getId(),
+                savedStaff.getName(),
+                savedStaff.getEmail(),
+                savedStaff.getRole(),
+                savedStaff.getCreatedAt());
     }
 
     private String normalizeOptionalEmail(String email) {
