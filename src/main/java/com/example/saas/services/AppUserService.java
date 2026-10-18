@@ -1,5 +1,6 @@
 package com.example.saas.services;
 
+import java.util.List;
 import java.util.Locale;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -114,5 +115,19 @@ public class AppUserService {
         }
 
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    public List<AppUserResponseDTO> findAll(Long workshopId){
+
+        return appUserRepository.findAllByWorkshop_Id(workshopId).stream()
+                .map(user -> new AppUserResponseDTO(
+                        user.getId(),
+                        user.getWorkshop().getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRole(),
+                        user.getCreatedAt()
+                ))
+                .toList();
     }
 }

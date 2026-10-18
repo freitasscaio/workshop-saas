@@ -1,18 +1,18 @@
 
 package com.example.saas.controllers;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.saas.dto.AppUserRequestDTO;
 import com.example.saas.dto.AppUserResponseDTO;
 import com.example.saas.services.AppUserService;
 
 import jakarta.validation.Valid;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -32,6 +32,25 @@ public class AppUserController {
         Long workshopId = getWorkshopId(jwt);
 
         return appUserService.registerStaff(dto, workshopId);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<AppUserResponseDTO>> findAll(@AuthenticationPrincipal Jwt jwt){
+
+        Object workshopIdClaim = jwt.getClaim("workshopId");
+
+        Long workshopId;
+
+        if(workshopIdClaim instanceof Number number){
+            workshopId = number.longValue();
+        } else {
+            workshopId = Long.parseLong(workshopIdClaim.toString());
+        }
+
+        List<AppUserResponseDTO> users = appUserService.findAll(workshopId);
+
+        return ResponseEntity.ok(users);
+
     }
 
     private Long getWorkshopId(Jwt jwt) {
