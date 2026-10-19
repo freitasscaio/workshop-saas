@@ -45,6 +45,10 @@ public class SecurityConfig {
                                 "/users/staff"
                         ).hasRole("OWNER")
                         .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/workshops/me"
+                        ).hasRole("OWNER")
+                        .requestMatchers(
                                 HttpMethod.GET,
                                 "/users"
                         )
