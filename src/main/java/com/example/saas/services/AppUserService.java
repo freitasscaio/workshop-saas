@@ -3,14 +3,12 @@ package com.example.saas.services;
 import java.util.List;
 import java.util.Locale;
 
+import com.example.saas.dto.*;
+import com.example.saas.exceptions.ResourceNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.saas.dto.AppUserRequestDTO;
-import com.example.saas.dto.AppUserResponseDTO;
-import com.example.saas.dto.WorkshopRegistrationRequestDTO;
-import com.example.saas.dto.WorkshopRegistrationResponseDTO;
 import com.example.saas.exceptions.BusinessRuleException;
 import com.example.saas.models.AppUser;
 import com.example.saas.models.Workshop;
@@ -130,4 +128,45 @@ public class AppUserService {
                 ))
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public AppUserResponseDTO findMe(Long userId) {
+
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Usuário não encontrado."));
+
+        return new AppUserResponseDTO(
+                user.getId(),
+                user.getWorkshop().getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                user.getCreatedAt()
+        );
+    }
+
+    @Transactional
+    public AppUserResponseDTO updateMyProfile(
+            Long userId,
+            AppUserProfileUpdateDTO dto) {
+
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Usuário não encontrado."));
+
+        user.setName(dto.getName().trim());
+
+        AppUser updatedUser = appUserRepository.save(user);
+
+        return new AppUserResponseDTO(
+                updatedUser.getId(),
+                updatedUser.getWorkshop().getId(),
+                updatedUser.getName(),
+                updatedUser.getEmail(),
+                updatedUser.getRole(),
+                updatedUser.getCreatedAt()
+        );
+    }
+
 }

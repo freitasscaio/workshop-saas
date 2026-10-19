@@ -1,6 +1,8 @@
 
 package com.example.saas.controllers;
 
+import com.example.saas.dto.AppUserProfileUpdateDTO;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -67,4 +69,44 @@ public class AppUserController {
         throw new IllegalStateException(
                 "O token não contém um workshopId válido.");
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<AppUserResponseDTO> findMe(@AuthenticationPrincipal Jwt jwt){
+
+        Long userId = getUserId(jwt);
+
+        return ResponseEntity.ok(appUserService.findMe(userId));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<AppUserResponseDTO> updateMyProfile(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody AppUserProfileUpdateDTO dto) {
+
+        Long userId = getUserId(jwt);
+
+        AppUserResponseDTO updatedUser =
+                appUserService.updateMyProfile(userId, dto);
+
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    private Long getUserId(Jwt jwt) {
+
+        Object claim = jwt.getClaim("userId");
+
+        if (claim instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (claim instanceof String value) {
+            return Long.parseLong(value);
+        }
+
+        throw new IllegalStateException(
+                "O token não contém um userId válido.");
+    }
+
+
+
 }
